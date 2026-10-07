@@ -1,0 +1,18 @@
+@DeliveryAPI_HostAddress = http://localhost:5295
+
+### Cadastrar usuário
+
+POST {{DeliveryAPI_HostAddress}}/api/usuario
+Content-Type: application/json
+
+{
+    "nome": "Heitor",
+    "email": "heitor@email.com",
+    "senha": "123456"
+}
+
+###
+
+### Listar usuários
+
+GET {{DeliveryAPI_HostAddress}}/api/usuario
