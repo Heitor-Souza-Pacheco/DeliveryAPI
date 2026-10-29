@@ -15,16 +15,21 @@ public class ProdutoController : ControllerBase
         return Ok(CatalogoProdutos.Listar()); // Ok envia HTTP 200 com os dados.
     }
 
-    [HttpGet("{id:int}")] // O parâmetro da rota precisa ser um inteiro.
-    public IActionResult BuscarPorId(int id)
+    [HttpGet("{id}")]
+public IActionResult BuscarPorId(string id)
+{
+    if (!int.TryParse(id, out int idConvertido))
     {
-        var produto = CatalogoProdutos.BuscarPorId(id);
-
-        if (produto == null)
-        {
-            return NotFound("Produto não encontrado."); // HTTP 404.
-        }
-
-        return Ok(produto);
+        return BadRequest("O ID precisa ser um número inteiro.");
     }
+
+    var produto = CatalogoProdutos.BuscarPorId(idConvertido);
+
+    if (produto == null)
+    {
+        return NotFound("Produto não encontrado.");
+    }
+
+    return Ok(produto);
+}
 }
