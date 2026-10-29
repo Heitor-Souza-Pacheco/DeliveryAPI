@@ -1,3 +1,4 @@
+using DeliveryAPI.Data;
 using DeliveryAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,9 +8,6 @@ namespace DeliveryAPI.Controllers;
 [Route("api/[controller]")]
 public class UsuarioController : ControllerBase
 {
-    private static readonly List<Usuario> usuarios = new();
-    private static int proximoId = 1;
-
     [HttpPost]
     public IActionResult Cadastrar([FromBody] Usuario usuario)
     {
@@ -28,7 +26,7 @@ public class UsuarioController : ControllerBase
             return BadRequest("A senha é obrigatória.");
         }
 
-        bool emailExiste = usuarios.Any(u =>
+        bool emailExiste = ArmazenamentoTemporario.Usuarios.Any(u =>
             u.Email.Equals(usuario.Email, StringComparison.OrdinalIgnoreCase));
 
         if (emailExiste)
@@ -36,17 +34,29 @@ public class UsuarioController : ControllerBase
             return Conflict("Este email já está cadastrado.");
         }
 
-        usuario.Id = proximoId;
-        proximoId++;
+        usuario.Id = ArmazenamentoTemporario.GerarProximoId();
+        ArmazenamentoTemporario.Usuarios.Add(usuario);
 
-        usuarios.Add(usuario);
-
-        return Ok(usuario);
+        // Nunca devolver a senha na resposta da API.
+        return Ok(new
+        {
+            usuario.Id,
+            usuario.Nome,
+            usuario.Email
+        });
     }
 
     [HttpGet]
     public IActionResult Listar()
     {
+        // Retornar somente os dados públicos dos usuários.
+        var usuarios = ArmazenamentoTemporario.Usuarios.Select(usuario => new
+        {
+            usuario.Id,
+            usuario.Nome,
+            usuario.Email
+        });
+
         return Ok(usuarios);
     }
 
@@ -63,15 +73,10 @@ public class UsuarioController : ControllerBase
             return BadRequest("A senha é obrigatória.");
         }
 
-        Usuario? usuario = usuarios.FirstOrDefault(u =>
+        Usuario? usuario = ArmazenamentoTemporario.Usuarios.FirstOrDefault(u =>
             u.Email.Equals(login.Email, StringComparison.OrdinalIgnoreCase));
 
-        if (usuario == null)
-        {
-            return Unauthorized("Email ou senha incorretos.");
-        }
-
-        if (usuario.Senha != login.Senha)
+        if (usuario == null || usuario.Senha != login.Senha)
         {
             return Unauthorized("Email ou senha incorretos.");
         }
