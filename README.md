@@ -4,6 +4,8 @@ API REST desenvolvida em **C# com ASP.NET Core** para simular o funcionamento de
 
 > **Estado atual:** projeto acadêmico em desenvolvimento. Os dados são armazenados temporariamente em memória; a integração com MySQL será feita posteriormente.
 
+📘 **Está aprendendo o código?** Consulte o [guia simples de C# e ASP.NET Core](docs/GUIA_CODIGO.md), que explica as anotações, validações, LINQ, respostas HTTP e outros recursos usados no projeto.
+
 ## 🛠️ Tecnologias
 
 - C#
