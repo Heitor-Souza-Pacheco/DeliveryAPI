@@ -4,11 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DeliveryAPI.Controllers;
 
+// ControllerBase fornece métodos prontos para responder HTTP, como Ok e NotFound.
 [ApiController]
 [Route("api/[controller]")]
 public class CarrinhoController : ControllerBase
 {
-    [HttpGet("{usuarioId:int}")]
+    [HttpGet("{usuarioId:int}")] // GET /api/carrinho/{usuarioId}; :int restringe a rota a inteiros.
     public IActionResult Consultar(int usuarioId)
     {
         var usuario = BuscarCliente(usuarioId);
@@ -39,7 +40,11 @@ public class CarrinhoController : ControllerBase
         }
 
         var carrinho = CarrinhosTemporarios.ObterOuCriar(usuarioId);
+
+        // FirstOrDefault procura o item; se não encontrar, retorna null.
         var itemExistente = carrinho.FirstOrDefault(i => i.ProdutoId == item.ProdutoId);
+
+        // ?. acessa Quantidade apenas se itemExistente não for null; ?? usa 0 como alternativa.
         var novaQuantidade = (itemExistente?.Quantidade ?? 0) + item.Quantidade;
 
         if (novaQuantidade > 100)
@@ -112,6 +117,8 @@ public class CarrinhoController : ControllerBase
         return Ok(MontarRespostaCarrinho(usuarioId));
     }
 
+    // private: método usado só dentro desta classe. static: não depende de um objeto controller.
+    // O ? em Usuario? indica que o método pode não encontrar um cliente e retornar null.
     private static Usuario? BuscarCliente(int usuarioId)
     {
         return ArmazenamentoTemporario.Usuarios.FirstOrDefault(
@@ -121,11 +128,14 @@ public class CarrinhoController : ControllerBase
 
     private static object MontarRespostaCarrinho(int usuarioId)
     {
+        // Select transforma cada item do carrinho em dados de resposta.
         var itens = CarrinhosTemporarios.ObterOuCriar(usuarioId)
             .Select(item =>
             {
                 var produto = CatalogoProdutos.BuscarPorId(item.ProdutoId);
 
+                // É um objeto anônimo: cria uma resposta sem precisar de outra classe de modelo.
+                // ?. e ?? fornecem valores alternativos se o produto não for encontrado.
                 return new
                 {
                     produtoId = item.ProdutoId,
@@ -135,13 +145,13 @@ public class CarrinhoController : ControllerBase
                     subtotal = (produto?.Preco ?? 0) * item.Quantidade
                 };
             })
-            .ToList();
+            .ToList(); // Materializa o resultado como uma lista.
 
         return new
         {
             usuarioId,
             itens,
-            total = itens.Sum(item => item.subtotal)
+            total = itens.Sum(item => item.subtotal) // Sum soma todos os subtotais.
         };
     }
 }
