@@ -20,6 +20,13 @@ public class UsuarioController : ControllerBase
         usuario.Email = usuario.Email.Trim();
         usuario.TipoConta = usuario.TipoConta.Trim();
 
+        // StringLength não rejeita um nome formado só por espaços antes do Trim.
+        // Esta verificação impede cadastrar um nome vazio depois de remover os espaços.
+        if (string.IsNullOrWhiteSpace(usuario.Nome))
+        {
+            return BadRequest("O nome não pode conter apenas espaços.");
+        }
+
         // Any retorna true se ao menos um usuário satisfaz a condição.
         // Lambda (u => ...) é uma forma curta de escrever essa condição.
         // OrdinalIgnoreCase compara textos sem diferenciar maiúsculas/minúsculas.
