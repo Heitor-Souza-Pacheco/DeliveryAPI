@@ -11,20 +11,8 @@ public class UsuarioController : ControllerBase
     [HttpPost]
     public IActionResult Cadastrar([FromBody] Usuario usuario)
     {
-        if (string.IsNullOrWhiteSpace(usuario.Nome))
-        {
-            return BadRequest("O nome é obrigatório.");
-        }
-
-        if (string.IsNullOrWhiteSpace(usuario.Email))
-        {
-            return BadRequest("O email é obrigatório.");
-        }
-
-        if (string.IsNullOrWhiteSpace(usuario.Senha))
-        {
-            return BadRequest("A senha é obrigatória.");
-        }
+        usuario.Nome = usuario.Nome.Trim();
+        usuario.Email = usuario.Email.Trim();
 
         bool emailExiste = ArmazenamentoTemporario.Usuarios.Any(u =>
             u.Email.Equals(usuario.Email, StringComparison.OrdinalIgnoreCase));
@@ -63,18 +51,10 @@ public class UsuarioController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] Login login)
     {
-        if (string.IsNullOrWhiteSpace(login.Email))
-        {
-            return BadRequest("O email é obrigatório.");
-        }
-
-        if (string.IsNullOrWhiteSpace(login.Senha))
-        {
-            return BadRequest("A senha é obrigatória.");
-        }
+        string email = login.Email.Trim();
 
         Usuario? usuario = ArmazenamentoTemporario.Usuarios.FirstOrDefault(u =>
-            u.Email.Equals(login.Email, StringComparison.OrdinalIgnoreCase));
+            u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
         if (usuario == null || usuario.Senha != login.Senha)
         {
