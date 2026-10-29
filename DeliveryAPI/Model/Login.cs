@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryAPI.Models;
 
+// Modelo simples para receber somente as credenciais enviadas no login.
 public class Login
 {
     [Required(ErrorMessage = "O email é obrigatório.")]
