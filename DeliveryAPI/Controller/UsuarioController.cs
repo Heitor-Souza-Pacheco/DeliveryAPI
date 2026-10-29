@@ -12,6 +12,7 @@ public class UsuarioController : ControllerBase
 {
     // [HttpPost] mapeia o método para requisições POST.
     // [FromBody] informa que os dados do usuário vêm do JSON enviado no corpo.
+    [HttpPost]
     public IActionResult Cadastrar([FromBody] Usuario usuario)
     {
         // Trim remove espaços no começo e no fim do texto.
