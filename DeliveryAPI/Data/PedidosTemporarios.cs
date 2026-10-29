@@ -12,6 +12,7 @@ public static class PedidosTemporarios
 
     private static int proximoId = 1;
 
+    // Entrega um ID sequencial para cada novo pedido.
     public static int GerarProximoId()
     {
         return proximoId++;
