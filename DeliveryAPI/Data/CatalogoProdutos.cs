@@ -8,6 +8,8 @@ namespace DeliveryAPI.Data;
 /// </summary>
 public static class CatalogoProdutos
 {
+    // Lista privada e readonly: a variável não será apontada para outra lista.
+    // Os produtos definidos aqui ficam disponíveis enquanto a API estiver rodando.
     private static readonly List<Produto> produtos = new()
     {
         new Produto
@@ -49,11 +51,13 @@ public static class CatalogoProdutos
 
     public static IReadOnlyList<Produto> Listar()
     {
+        // AsReadOnly expõe uma visão somente para leitura da lista.
         return produtos.AsReadOnly();
     }
 
     public static Produto? BuscarPorId(int id)
     {
+        // FirstOrDefault devolve o primeiro item que atende à condição ou null.
         return produtos.FirstOrDefault(produto => produto.Id == id);
     }
 }
