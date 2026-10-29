@@ -1,6 +1,7 @@
 @DeliveryAPI_HostAddress = http://localhost:5295
 
 ### Cadastrar usuário
+# Informe também tipoConta: "Cliente" ou "Entregador", pois o campo é obrigatório.
 
 POST {{DeliveryAPI_HostAddress}}/api/usuario
 Content-Type: application/json
@@ -8,7 +9,8 @@ Content-Type: application/json
 {
     "nome": "Heitor",
     "email": "heitor@email.com",
-    "senha": "123456"
+    "senha": "123456",
+    "tipoConta": "Cliente"
 }
 
 ###
