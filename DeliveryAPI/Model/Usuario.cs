@@ -18,4 +18,8 @@ public class Usuario
     [Required(ErrorMessage = "A senha é obrigatória.")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "A senha deve ter pelo menos 6 caracteres.")]
     public string Senha { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Selecione o tipo de conta.")]
+    [RegularExpression("^(Cliente|Entregador)$", ErrorMessage = "O tipo de conta deve ser Cliente ou Entregador.")]
+    public string TipoConta { get; set; } = string.Empty;
 }
