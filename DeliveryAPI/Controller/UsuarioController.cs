@@ -13,6 +13,7 @@ public class UsuarioController : ControllerBase
     {
         usuario.Nome = usuario.Nome.Trim();
         usuario.Email = usuario.Email.Trim();
+        usuario.TipoConta = usuario.TipoConta.Trim();
 
         bool emailExiste = ArmazenamentoTemporario.Usuarios.Any(u =>
             u.Email.Equals(usuario.Email, StringComparison.OrdinalIgnoreCase));
@@ -30,7 +31,8 @@ public class UsuarioController : ControllerBase
         {
             usuario.Id,
             usuario.Nome,
-            usuario.Email
+            usuario.Email,
+            usuario.TipoConta
         });
     }
 
@@ -42,7 +44,8 @@ public class UsuarioController : ControllerBase
         {
             usuario.Id,
             usuario.Nome,
-            usuario.Email
+            usuario.Email,
+            usuario.TipoConta
         });
 
         return Ok(usuarios);
@@ -68,7 +71,8 @@ public class UsuarioController : ControllerBase
             {
                 usuario.Id,
                 usuario.Nome,
-                usuario.Email
+                usuario.Email,
+                usuario.TipoConta
             }
         });
     }
