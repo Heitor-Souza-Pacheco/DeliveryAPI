@@ -104,6 +104,27 @@ public class PedidoController : ControllerBase
         return Ok(pedidos);
     }
 
+    [HttpGet("entregador/{entregadorId:int}")]
+    public IActionResult ListarTodosParaEntregador(int entregadorId)
+    {
+        // Confere se o ID informado pertence a uma conta cadastrada como entregador.
+        var entregador = ArmazenamentoTemporario.Usuarios.FirstOrDefault(usuario =>
+            usuario.Id == entregadorId &&
+            usuario.TipoConta.Equals("Entregador", StringComparison.OrdinalIgnoreCase));
+
+        if (entregador == null)
+        {
+            return NotFound("Entregador não encontrado.");
+        }
+
+        // Todos os entregadores podem consultar todos os pedidos, do mais recente ao mais antigo.
+        var pedidos = PedidosTemporarios.Pedidos
+            .OrderByDescending(pedido => pedido.DataCriacao)
+            .ToList();
+
+        return Ok(pedidos);
+    }
+
     [HttpPut("{pedidoId:int}/status")]
     public IActionResult AtualizarStatus(int pedidoId, [FromBody] AtualizarStatusPedido requisicao)
     {
