@@ -71,15 +71,19 @@ public class UsuarioController : ControllerBase
     public IActionResult Login([FromBody] Login login)
     {
         string email = login.Email.Trim();
+        string tipoConta = login.TipoConta.Trim();
 
         // FirstOrDefault retorna o primeiro usuário correspondente ou null se não achar.
         // Usuario? indica que a variável pode conter um Usuario ou null.
         Usuario? usuario = ArmazenamentoTemporario.Usuarios.FirstOrDefault(u =>
             u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
-        if (usuario == null || usuario.Senha != login.Senha)
+        // Além das credenciais, confere se o tipo selecionado corresponde ao cadastro.
+        if (usuario == null ||
+            usuario.Senha != login.Senha ||
+            !usuario.TipoConta.Equals(tipoConta, StringComparison.OrdinalIgnoreCase))
         {
-            return Unauthorized("Email ou senha incorretos."); // HTTP 401.
+            return Unauthorized("Email, senha ou tipo de conta incorretos."); // HTTP 401.
         }
 
         return Ok(new
