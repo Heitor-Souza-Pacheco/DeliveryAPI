@@ -160,7 +160,7 @@ POST /api/pedido/1
 
 A criação retorna `201 Created` quando concluída com sucesso.
 
-Para o painel de entregador, use `GET /api/pedido/2`? Não: a rota de listagem é `GET /api/pedido/entregador/2`, substituindo `2` pelo ID real do entregador. Todos os entregadores cadastrados podem visualizar a mesma lista, ordenada do pedido mais recente ao mais antigo.
+Para o painel de entregador, use `GET /api/pedido/entregador/2`, substituindo `2` pelo ID real do entregador. Todos os entregadores cadastrados podem visualizar a mesma lista, ordenada do pedido mais recente ao mais antigo.
 
 ### Status de entrega
 
