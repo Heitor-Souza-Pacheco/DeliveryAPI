@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryAPI.Models;
 
-// Representa um produto do catálogo de rosquinhas.
+// produto do catálogo
 public class Produto
 {
     public int Id { get; set; }
@@ -12,7 +12,7 @@ public class Produto
 
     public string Descricao { get; set; } = string.Empty;
 
-    // [Range] limita o valor aceito; o sufixo m indica que o número é decimal.
+    // [Range] limita o valor aceito
     [Range(0.01, 100000, ErrorMessage = "O preço deve ser maior que zero.")]
     public decimal Preco { get; set; }
 

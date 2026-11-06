@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryAPI.Models;
 
-// Representa um produto e a quantidade escolhida no carrinho.
+// usei para fazer a relação entre produtos e pedidos
 public class ItemCarrinho
 {
     public int ProdutoId { get; set; }
