@@ -9,7 +9,7 @@ API REST desenvolvida em **C# com ASP.NET Core** para simular o funcionamento de
 ## 🛠️ Tecnologias
 
 - C#
-- .NET 10 / ASP.NET Core Web API
+- .NET 9 / ASP.NET Core Web API
 - Controllers e rotas REST
 - Validação de dados com Data Annotations
 - Postman para testes manuais
@@ -32,7 +32,7 @@ API REST desenvolvida em **C# com ASP.NET Core** para simular o funcionamento de
 
 ### Pré-requisitos
 
-- [.NET SDK 10](https://dotnet.microsoft.com/)
+- [.NET SDK 9](https://dotnet.microsoft.com/)
 - Git
 - Postman (ou ferramenta equivalente para enviar requisições HTTP)
 
