@@ -1,101 +1,66 @@
 using DeliveryAPI.Data;
 using DeliveryAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryAPI.Controllers;
 
-// [ApiController] habilita validações automáticas dos modelos.
-// [Route] define a rota-base /api/usuario.
 [ApiController]
 [Route("api/[controller]")]
 public class UsuarioController : ControllerBase
 {
-    // [HttpPost] mapeia o método para requisições POST.
-    // [FromBody] informa que os dados do usuário vêm do JSON enviado no corpo.
+    private readonly AppDbContext _context;
+
+    public UsuarioController(AppDbContext context) => _context = context;
+
     [HttpPost]
-    public IActionResult Cadastrar([FromBody] Usuario usuario)
+    public async Task<IActionResult> Cadastrar([FromBody] Usuario usuario)
     {
-        // Trim remove espaços no começo e no fim do texto.
         usuario.Nome = usuario.Nome.Trim();
         usuario.Email = usuario.Email.Trim();
         usuario.TipoConta = usuario.TipoConta.Trim();
 
-        // StringLength não rejeita um nome formado só por espaços antes do Trim.
-        // Esta verificação impede cadastrar um nome vazio depois de remover os espaços.
         if (string.IsNullOrWhiteSpace(usuario.Nome))
-        {
             return BadRequest("O nome não pode conter apenas espaços.");
-        }
 
-        // Any retorna true se ao menos um usuário satisfaz a condição.
-        // Lambda (u => ...) é uma forma curta de escrever essa condição.
-        // OrdinalIgnoreCase compara textos sem diferenciar maiúsculas/minúsculas.
-        bool emailExiste = ArmazenamentoTemporario.Usuarios.Any(u =>
-            u.Email.Equals(usuario.Email, StringComparison.OrdinalIgnoreCase));
-
+        bool emailExiste = await _context.Usuarios.AnyAsync(u => u.Email.ToLower() == usuario.Email.ToLower());
         if (emailExiste)
-        {
-            return Conflict("Este email já está cadastrado."); // HTTP 409.
-        }
+            return Conflict("Este email já está cadastrado.");
 
-        usuario.Id = ArmazenamentoTemporario.GerarProximoId();
-        ArmazenamentoTemporario.Usuarios.Add(usuario);
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
 
-        // Nunca devolver a senha na resposta da API.
-        return Ok(new
-        {
-            usuario.Id,
-            usuario.Nome,
-            usuario.Email,
-            usuario.TipoConta
-        });
+        return Ok(new { usuario.Id, usuario.Nome, usuario.Email, usuario.TipoConta });
     }
 
     [HttpGet]
-    public IActionResult Listar()
+    public async Task<IActionResult> Listar()
     {
-        // Select projeta cada usuário para um objeto com apenas os dados públicos.
-        // Assim, a senha não faz parte da resposta.
-        var usuarios = ArmazenamentoTemporario.Usuarios.Select(usuario => new
-        {
-            usuario.Id,
-            usuario.Nome,
-            usuario.Email,
-            usuario.TipoConta
-        });
+        var usuarios = await _context.Usuarios
+            .Select(usuario => new { usuario.Id, usuario.Nome, usuario.Email, usuario.TipoConta })
+            .ToListAsync();
 
         return Ok(usuarios);
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] Login login)
+    public async Task<IActionResult> Login([FromBody] Login login)
     {
         string email = login.Email.Trim();
         string tipoConta = login.TipoConta.Trim();
 
-        // FirstOrDefault retorna o primeiro usuário correspondente ou null se não achar.
-        // Usuario? indica que a variável pode conter um Usuario ou null.
-        Usuario? usuario = ArmazenamentoTemporario.Usuarios.FirstOrDefault(u =>
-            u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        Usuario? usuario = await _context.Usuarios.FirstOrDefaultAsync(u =>
+            u.Email.ToLower() == email.ToLower());
 
-        // Além das credenciais, confere se o tipo selecionado corresponde ao cadastro.
         if (usuario == null ||
             usuario.Senha != login.Senha ||
             !usuario.TipoConta.Equals(tipoConta, StringComparison.OrdinalIgnoreCase))
-        {
-            return Unauthorized("Email, senha ou tipo de conta incorretos."); // HTTP 401.
-        }
+            return Unauthorized("Email, senha ou tipo de conta incorretos.");
 
         return Ok(new
         {
             mensagem = "Login realizado com sucesso!",
-            usuario = new
-            {
-                usuario.Id,
-                usuario.Nome,
-                usuario.Email,
-                usuario.TipoConta
-            }
+            usuario = new { usuario.Id, usuario.Nome, usuario.Email, usuario.TipoConta }
         });
     }
 }
