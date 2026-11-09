@@ -1,10 +1,18 @@
-// Cria o construtor que configura os serviços e opções da aplicação web.
+using DeliveryAPI.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Registra o suporte a controllers para receber requisições HTTP.
 builder.Services.AddControllers();
 
-// Permite que o frontend local acesse a API durante o desenvolvimento.
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("A connection string 'DefaultConnection' não foi configurada.");
+
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -16,14 +24,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Constrói a aplicação com os serviços configurados acima.
 var app = builder.Build();
 
-// Aplica a política de CORS antes de mapear os controllers.
+// Cria as tabelas e insere os produtos iniciais na primeira execução.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
+
 app.UseCors("FrontendPolicy");
-
-// Faz com que as rotas definidas nos controllers sejam atendidas.
 app.MapControllers();
-
-// Inicia o servidor web e passa a receber requisições.
 app.Run();
