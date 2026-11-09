@@ -1,35 +1,32 @@
 using DeliveryAPI.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryAPI.Controllers;
 
-// [ApiController] ativa comportamentos próprios de uma API, como validação automática do modelo.
-// [Route] define o caminho-base. [controller] vira o nome da classe sem "Controller".
 [ApiController]
 [Route("api/[controller]")]
 public class ProdutoController : ControllerBase
 {
-    [HttpGet] // Atende GET /api/produto.
-    public IActionResult Listar()
+    private readonly AppDbContext _context;
+
+    public ProdutoController(AppDbContext context) => _context = context;
+
+    [HttpGet]
+    public async Task<IActionResult> Listar()
     {
-        return Ok(CatalogoProdutos.Listar()); // Ok envia HTTP 200 com os dados.
+        return Ok(await _context.Produtos.AsNoTracking().ToListAsync());
     }
 
-    [HttpGet("{id}")]
-public IActionResult BuscarPorId(string id)
-{
-    if (!int.TryParse(id, out int idConvertido))
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> BuscarPorId(int id)
     {
-        return BadRequest("O ID precisa ser um número inteiro.");
+        var produto = await _context.Produtos.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (produto == null)
+            return NotFound("Produto não encontrado.");
+
+        return Ok(produto);
     }
-
-    var produto = CatalogoProdutos.BuscarPorId(idConvertido);
-
-    if (produto == null)
-    {
-        return NotFound("Produto não encontrado.");
-    }
-
-    return Ok(produto);
-}
 }
