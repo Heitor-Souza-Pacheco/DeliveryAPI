@@ -1,6 +1,7 @@
 using DeliveryAPI.Data;
 using DeliveryAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryAPI.Controllers;
 
@@ -8,39 +9,31 @@ namespace DeliveryAPI.Controllers;
 [Route("api/[controller]")]
 public class PedidoController : ControllerBase
 {
+    private readonly AppDbContext _context;
+
+    public PedidoController(AppDbContext context) => _context = context;
+
     [HttpPost("{clienteId:int}")]
-    public IActionResult Criar(int clienteId)
+    public async Task<IActionResult> Criar(int clienteId)
     {
-        // FirstOrDefault busca o cliente pelo ID e pelo tipo de conta.
-        var cliente = ArmazenamentoTemporario.Usuarios.FirstOrDefault(usuario =>
-            usuario.Id == clienteId &&
-            usuario.TipoConta.Equals("Cliente", StringComparison.OrdinalIgnoreCase));
-
-        if (cliente == null)
-        {
+        bool clienteExiste = await _context.Usuarios.AnyAsync(u =>
+            u.Id == clienteId && u.TipoConta == "Cliente");
+        if (!clienteExiste)
             return NotFound("Cliente não encontrado.");
-        }
 
-        var carrinho = CarrinhosTemporarios.ObterOuCriar(clienteId);
+        var carrinho = await _context.ItensCarrinho
+            .Where(i => i.UsuarioId == clienteId).ToListAsync();
 
         if (carrinho.Count == 0)
-        {
             return BadRequest("Não é possível criar um pedido com o carrinho vazio.");
-        }
 
-        // Monta uma nova lista de itens para guardar no pedido.
         var itensPedido = new List<ItemPedido>();
-
         foreach (var item in carrinho)
         {
-            var produto = CatalogoProdutos.BuscarPorId(item.ProdutoId);
-
+            var produto = await _context.Produtos.FindAsync(item.ProdutoId);
             if (produto == null || !produto.Disponivel)
-            {
                 return BadRequest($"O produto de ID {item.ProdutoId} está indisponível.");
-            }
 
-            // Copia nome e preço atuais para que o histórico não dependa do catálogo depois.
             itensPedido.Add(new ItemPedido
             {
                 ProdutoId = produto.Id,
@@ -52,116 +45,90 @@ public class PedidoController : ControllerBase
 
         var pedido = new Pedido
         {
-            Id = PedidosTemporarios.GerarProximoId(),
             ClienteId = clienteId,
             DataCriacao = DateTime.Now,
             Status = "Recebido",
             Itens = itensPedido
         };
 
-        PedidosTemporarios.Pedidos.Add(pedido);
-        carrinho.Clear(); // Limpa o carrinho depois de registrar o pedido.
+        _context.Pedidos.Add(pedido);
+        _context.ItensCarrinho.RemoveRange(carrinho);
+        await _context.SaveChangesAsync();
 
-        // CreatedAtAction retorna HTTP 201 e aponta para a rota que consulta o pedido criado.
-        return CreatedAtAction(
-            nameof(BuscarPorId), // nameof obtém o nome do método sem escrever uma string fixa.
-            new { pedidoId = pedido.Id }, // Objeto anônimo com o parâmetro da rota.
-            pedido);
+        return CreatedAtAction(nameof(BuscarPorId), new { pedidoId = pedido.Id }, pedido);
     }
 
     [HttpGet("{pedidoId:int}")]
-    public IActionResult BuscarPorId(int pedidoId)
+    public async Task<IActionResult> BuscarPorId(int pedidoId)
     {
-        var pedido = PedidosTemporarios.Pedidos.FirstOrDefault(p => p.Id == pedidoId);
+        var pedido = await _context.Pedidos.Include(p => p.Itens)
+            .AsNoTracking().FirstOrDefaultAsync(p => p.Id == pedidoId);
 
         if (pedido == null)
-        {
             return NotFound("Pedido não encontrado.");
-        }
 
         return Ok(pedido);
     }
 
     [HttpGet("cliente/{clienteId:int}")]
-    public IActionResult ListarPorCliente(int clienteId)
+    public async Task<IActionResult> ListarPorCliente(int clienteId)
     {
-        var cliente = ArmazenamentoTemporario.Usuarios.FirstOrDefault(usuario =>
-            usuario.Id == clienteId &&
-            usuario.TipoConta.Equals("Cliente", StringComparison.OrdinalIgnoreCase));
-
-        if (cliente == null)
-        {
+        bool clienteExiste = await _context.Usuarios.AnyAsync(u =>
+            u.Id == clienteId && u.TipoConta == "Cliente");
+        if (!clienteExiste)
             return NotFound("Cliente não encontrado.");
-        }
 
-        // Where filtra os pedidos do cliente; OrderByDescending organiza do mais recente ao mais antigo.
-        // ToList executa a consulta e cria uma lista com o resultado.
-        var pedidos = PedidosTemporarios.Pedidos
-            .Where(pedido => pedido.ClienteId == clienteId)
-            .OrderByDescending(pedido => pedido.DataCriacao)
-            .ToList();
+        var pedidos = await _context.Pedidos
+            .Where(p => p.ClienteId == clienteId)
+            .Include(p => p.Itens)
+            .OrderByDescending(p => p.DataCriacao)
+            .AsNoTracking().ToListAsync();
 
         return Ok(pedidos);
     }
 
     [HttpGet("entregador/{entregadorId:int}")]
-    public IActionResult ListarTodosParaEntregador(int entregadorId)
+    public async Task<IActionResult> ListarTodosParaEntregador(int entregadorId)
     {
-        // Confere se o ID informado pertence a uma conta cadastrada como entregador.
-        var entregador = ArmazenamentoTemporario.Usuarios.FirstOrDefault(usuario =>
-            usuario.Id == entregadorId &&
-            usuario.TipoConta.Equals("Entregador", StringComparison.OrdinalIgnoreCase));
-
-        if (entregador == null)
-        {
+        bool entregadorExiste = await _context.Usuarios.AnyAsync(u =>
+            u.Id == entregadorId && u.TipoConta == "Entregador");
+        if (!entregadorExiste)
             return NotFound("Entregador não encontrado.");
-        }
 
-        // Todos os entregadores podem consultar todos os pedidos, do mais recente ao mais antigo.
-        var pedidos = PedidosTemporarios.Pedidos
-            .OrderByDescending(pedido => pedido.DataCriacao)
-            .ToList();
+        var pedidos = await _context.Pedidos.Include(p => p.Itens)
+            .OrderByDescending(p => p.DataCriacao)
+            .AsNoTracking().ToListAsync();
 
         return Ok(pedidos);
     }
 
     [HttpPut("{pedidoId:int}/status")]
-    public IActionResult AtualizarStatus(int pedidoId, [FromBody] AtualizarStatusPedido requisicao)
+    public async Task<IActionResult> AtualizarStatus(int pedidoId,
+        [FromBody] AtualizarStatusPedido requisicao)
     {
-        var entregador = ArmazenamentoTemporario.Usuarios.FirstOrDefault(usuario =>
-            usuario.Id == requisicao.EntregadorId &&
-            usuario.TipoConta.Equals("Entregador", StringComparison.OrdinalIgnoreCase));
-
-        if (entregador == null)
-        {
+        bool entregadorExiste = await _context.Usuarios.AnyAsync(u =>
+            u.Id == requisicao.EntregadorId && u.TipoConta == "Entregador");
+        if (!entregadorExiste)
             return NotFound("Entregador não encontrado.");
-        }
 
-        var pedido = PedidosTemporarios.Pedidos.FirstOrDefault(p => p.Id == pedidoId);
-
+        var pedido = await _context.Pedidos.Include(p => p.Itens)
+            .FirstOrDefaultAsync(p => p.Id == pedidoId);
         if (pedido == null)
-        {
             return NotFound("Pedido não encontrado.");
-        }
 
-        // switch expression escolhe o resultado de acordo com o status atual.
-        // Só permite avançar exatamente uma etapa por vez.
-        var statusAtual = pedido.Status;
-        var proximoStatusValido = statusAtual switch
+        bool proximoStatusValido = pedido.Status switch
         {
             "Recebido" => requisicao.Status == "EmPreparacao",
             "EmPreparacao" => requisicao.Status == "SaiuParaEntrega",
             "SaiuParaEntrega" => requisicao.Status == "Entregue",
-            _ => false // _ representa qualquer outro caso não listado.
+            _ => false
         };
 
         if (!proximoStatusValido)
-        {
             return BadRequest("Transição de status inválida. O fluxo permitido é Recebido, EmPreparacao, SaiuParaEntrega e Entregue.");
-        }
 
         pedido.Status = requisicao.Status;
-
+        await _context.SaveChangesAsync();
         return Ok(pedido);
     }
 }
