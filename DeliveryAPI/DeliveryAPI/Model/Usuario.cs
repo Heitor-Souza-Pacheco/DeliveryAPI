@@ -12,7 +12,7 @@ public class Usuario
 
     [Required(ErrorMessage = "O email é obrigatório.")]
     [EmailAddress(ErrorMessage = "Informe um email válido.")]
-    [StringLength(254, ErrorMessage = "O email deve ter no máximo 254 caracteres.")]
+    [StringLength(191, ErrorMessage = "O email deve ter no máximo 191 caracteres.")]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "A senha é obrigatória.")]
