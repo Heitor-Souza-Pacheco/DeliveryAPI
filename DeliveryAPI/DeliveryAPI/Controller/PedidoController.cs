@@ -16,10 +16,14 @@ public class PedidoController : ControllerBase
     [HttpPost("{clienteId:int}")]
     public async Task<IActionResult> Criar(int clienteId)
     {
-        bool clienteExiste = await _context.Usuarios.AnyAsync(u =>
+        var cliente = await _context.Usuarios.FirstOrDefaultAsync(u =>
             u.Id == clienteId && u.TipoConta == "Cliente");
-        if (!clienteExiste)
+
+        if (cliente == null)
             return NotFound("Cliente não encontrado.");
+
+        if (string.IsNullOrWhiteSpace(cliente.Endereco))
+            return BadRequest("Cadastre um endereço antes de finalizar o pedido.");
 
         var carrinho = await _context.ItensCarrinho
             .Where(i => i.UsuarioId == clienteId).ToListAsync();
@@ -28,9 +32,11 @@ public class PedidoController : ControllerBase
             return BadRequest("Não é possível criar um pedido com o carrinho vazio.");
 
         var itensPedido = new List<ItemPedido>();
+
         foreach (var item in carrinho)
         {
             var produto = await _context.Produtos.FindAsync(item.ProdutoId);
+
             if (produto == null || !produto.Disponivel)
                 return BadRequest($"O produto de ID {item.ProdutoId} está indisponível.");
 
@@ -46,6 +52,7 @@ public class PedidoController : ControllerBase
         var pedido = new Pedido
         {
             ClienteId = clienteId,
+            EnderecoEntrega = cliente.Endereco,
             DataCriacao = DateTime.Now,
             Status = "Recebido",
             Itens = itensPedido
@@ -75,6 +82,7 @@ public class PedidoController : ControllerBase
     {
         bool clienteExiste = await _context.Usuarios.AnyAsync(u =>
             u.Id == clienteId && u.TipoConta == "Cliente");
+
         if (!clienteExiste)
             return NotFound("Cliente não encontrado.");
 
@@ -92,6 +100,7 @@ public class PedidoController : ControllerBase
     {
         bool entregadorExiste = await _context.Usuarios.AnyAsync(u =>
             u.Id == entregadorId && u.TipoConta == "Entregador");
+
         if (!entregadorExiste)
             return NotFound("Entregador não encontrado.");
 
@@ -108,11 +117,13 @@ public class PedidoController : ControllerBase
     {
         bool entregadorExiste = await _context.Usuarios.AnyAsync(u =>
             u.Id == requisicao.EntregadorId && u.TipoConta == "Entregador");
+
         if (!entregadorExiste)
             return NotFound("Entregador não encontrado.");
 
         var pedido = await _context.Pedidos.Include(p => p.Itens)
             .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
         if (pedido == null)
             return NotFound("Pedido não encontrado.");
 
