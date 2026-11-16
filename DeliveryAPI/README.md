@@ -1,97 +1,71 @@
 # 🍩 DeliveryAPI — API de Delivery de Donuts
 
-API REST desenvolvida em **C# com ASP.NET Core** para simular o funcionamento de um sistema de delivery de donuts. O projeto permite cadastrar clientes e entregadores, consultar produtos, gerenciar carrinhos, criar pedidos e acompanhar o status da entrega.
+API REST desenvolvida em C# com ASP.NET Core 9 para o projeto Donnuts & Breack. A API gerencia cadastro e login de clientes e entregadores, catálogo de produtos, carrinhos e pedidos.
 
-> **Estado atual:** projeto acadêmico em desenvolvimento. Os dados são armazenados temporariamente em memória; a integração com MySQL será feita posteriormente.
+## Tecnologias
 
-📘 **Está aprendendo o código?** Consulte o [guia simples de C# e ASP.NET Core](docs/GUIA_CODIGO.md), que explica as anotações, validações, LINQ, respostas HTTP e outros recursos usados no projeto.
+- C# / .NET 9 / ASP.NET Core Web API
+- Entity Framework Core
+- MySQL com Pomelo
+- Data Annotations para validação
 
-## 🛠️ Tecnologias
+## Configuração
 
-- C#
-- .NET 9 / ASP.NET Core Web API
-- Controllers e rotas REST
-- Validação de dados com Data Annotations
-- Postman para testes manuais
-- Armazenamento temporário em coleções estáticas (sem banco de dados nesta etapa)
+A API utiliza MySQL. A conexão não deve ser salva no repositório.
 
-## ✨ Funcionalidades
+Configure a variável de ambiente `ConnectionStrings__DefaultConnection` antes de iniciar a aplicação.
 
-- Cadastro de usuários dos tipos `Cliente` e `Entregador`
-- Login com seleção e validação do tipo de conta
-- Catálogo de donuts com consulta por ID
-- Carrinho por cliente, com inclusão, alteração e remoção de itens
-- Cálculo de subtotal e total do carrinho
-- Criação de pedidos a partir do carrinho
-- Consulta de pedido por ID e listagem de pedidos por cliente
-- Listagem de todos os pedidos para qualquer entregador cadastrado
-- Atualização de status com validação da sequência de entrega
-- Validações de entrada e respostas HTTP para situações de sucesso ou erro
+Exemplo no PowerShell (substitua os valores pelos dados do seu ambiente):
 
-## 🚀 Como executar
+```powershell
+$env:ConnectionStrings__DefaultConnection="Server=localhost;Port=3306;Database=delivery_db;User=delivery_app;Password=<SENHA_DO_BANCO>;"
+dotnet restore
+dotnet run
+```
 
-### Pré-requisitos
+A API usa a porta HTTP `5295` no perfil local. O front-end servido pelo Live Server na porta `5500` já está liberado na política CORS.
 
-- [.NET SDK 9](https://dotnet.microsoft.com/)
-- Git
-- Postman (ou ferramenta equivalente para enviar requisições HTTP)
+Em implantação com Nginx, configure o proxy de `/api/` para a porta local da API e sirva o front e a API no mesmo domínio.
 
-### Passos
+## Banco de dados
 
-1. Clone o repositório:
+O `AppDbContext` configura as tabelas `usuarios`, `produtos`, `itens_carrinho`, `pedidos` e `itens_pedido`.
 
-   ```bash
-   git clone https://github.com/Heitor-Souza-Pacheco/DeliveryAPI.git
-   cd DeliveryAPI
-   ```
+Na inicialização, a API:
 
-2. Entre na pasta do projeto:
+1. Garante a criação inicial do banco e das tabelas.
+2. Adiciona as colunas `Telefone`, `Endereco` e `EnderecoEntrega` caso o banco já existisse antes desta integração.
+3. Sincroniza os quatro produtos do catálogo com os produtos exibidos no front.
 
-   ```bash
-   cd DeliveryAPI
-   ```
+Os carrinhos e pedidos ficam persistidos no MySQL. Os quatro produtos disponíveis são Original, Chocolate, Amendoim C/ Nutella e Morango c/Confeitos.
 
-3. Restaure as dependências e execute:
-
-   ```bash
-   dotnet restore
-   dotnet run
-   ```
-
-4. Confira no terminal o endereço local informado pelo ASP.NET Core e use-o como base das requisições. Por exemplo, se a API estiver em `http://localhost:5295`, a URL-base será:
-
-   ```text
-   http://localhost:5295
-   ```
-
-> A porta pode variar conforme a configuração local. Use a URL exibida pelo comando `dotnet run`.
-
-## 📚 Endpoints
-
-Todas as rotas abaixo são relativas à URL-base da API.
+## Endpoints
 
 ### Usuários
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/usuario` | Cadastra cliente ou entregador |
-| `GET` | `/api/usuario` | Lista usuários sem retornar senhas |
-| `POST` | `/api/usuario/login` | Realiza login conferindo credenciais e tipo de conta |
+| POST | `/api/usuario` | Cadastra cliente ou entregador |
+| GET | `/api/usuario` | Lista os dados básicos dos usuários |
+| PUT | `/api/usuario/{id}` | Atualiza nome, e-mail, telefone, endereço e, opcionalmente, senha |
+| POST | `/api/usuario/login` | Realiza login com e-mail, senha e tipo de conta |
 
-Exemplo de cadastro (`POST /api/usuario`):
+Exemplo de cadastro:
 
 ```json
 {
   "nome": "Ana Souza",
   "email": "ana@example.com",
+  "telefone": "(31) 99999-9999",
+  "endereco": "Rua Exemplo, 100, Centro",
   "senha": "senha123",
   "tipoConta": "Cliente"
 }
 ```
 
-Para cadastrar um entregador, use `"tipoConta": "Entregador"`. O e-mail deve ser único. A resposta de cadastro inclui o ID gerado e os dados públicos do usuário, sem a senha.
+O campo `endereco` é obrigatório para clientes. Para entregadores, o endereço não é necessário. O telefone é obrigatório para ambos.
 
-Exemplo de login (`POST /api/usuario/login`):
+Exemplo de login:
 
 ```json
 {
@@ -101,27 +75,27 @@ Exemplo de login (`POST /api/usuario/login`):
 }
 ```
 
-O campo `tipoConta` deve corresponder ao tipo escolhido na tela de login e ao tipo salvo no cadastro. Se as credenciais ou o tipo não corresponderem, a API retorna `401 Unauthorized`. A resposta de sucesso inclui os dados públicos do usuário, inclusive seu ID e tipo de conta.
+O tipo deve ser `Cliente` ou `Entregador` e precisa corresponder ao cadastro.
+
+As senhas novas são armazenadas usando o `PasswordHasher` do ASP.NET Core. Contas antigas com senha em texto puro podem entrar uma vez com a senha anterior; no login bem-sucedido, a API atualiza o armazenamento para o formato protegido.
 
 ### Produtos
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/produto` | Lista os produtos do catálogo |
-| `GET` | `/api/produto/{id}` | Consulta um produto por ID |
-
-O catálogo inicial possui cinco donuts cadastrados em memória.
+| GET | `/api/produto` | Lista produtos disponíveis |
+| GET | `/api/produto/{id}` | Consulta um produto por ID |
 
 ### Carrinho
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/carrinho/{usuarioId}` | Consulta o carrinho do cliente |
-| `POST` | `/api/carrinho/{usuarioId}/itens` | Adiciona um produto ao carrinho |
-| `PUT` | `/api/carrinho/{usuarioId}/itens/{produtoId}` | Altera a quantidade de um produto |
-| `DELETE` | `/api/carrinho/{usuarioId}/itens/{produtoId}` | Remove um produto do carrinho |
+| GET | `/api/carrinho/{usuarioId}` | Consulta o carrinho do cliente |
+| POST | `/api/carrinho/{usuarioId}/itens` | Adiciona um produto |
+| PUT | `/api/carrinho/{usuarioId}/itens/{produtoId}` | Atualiza a quantidade |
+| DELETE | `/api/carrinho/{usuarioId}/itens/{produtoId}` | Remove um produto |
 
-Exemplo de inclusão (`POST /api/carrinho/1/itens`):
+Exemplo de inclusão:
 
 ```json
 {
@@ -130,47 +104,25 @@ Exemplo de inclusão (`POST /api/carrinho/1/itens`):
 }
 ```
 
-Exemplo de alteração de quantidade (`PUT /api/carrinho/1/itens/1`):
-
-```json
-{
-  "quantidade": 3
-}
-```
-
-Os IDs dos exemplos são ilustrativos: use o ID real do cliente retornado pelo cadastro. A mesma inclusão de produto soma a quantidade ao item já existente, respeitando o limite definido pela API.
-
 ### Pedidos
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/pedido/{clienteId}` | Cria um pedido a partir do carrinho |
-| `GET` | `/api/pedido/{pedidoId}` | Consulta um pedido por ID |
-| `GET` | `/api/pedido/cliente/{clienteId}` | Lista os pedidos de um cliente |
-| `GET` | `/api/pedido/entregador/{entregadorId}` | Lista todos os pedidos para um entregador cadastrado |
-| `PUT` | `/api/pedido/{pedidoId}/status` | Atualiza o status do pedido |
+| POST | `/api/pedido/{clienteId}` | Cria pedido com os itens do carrinho |
+| GET | `/api/pedido/{pedidoId}` | Consulta um pedido |
+| GET | `/api/pedido/cliente/{clienteId}` | Lista pedidos do cliente |
+| GET | `/api/pedido/entregador/{entregadorId}` | Lista pedidos para o entregador |
+| PUT | `/api/pedido/{pedidoId}/status` | Avança o status do pedido |
 
-A criação do pedido não exige corpo JSON: a API usa os itens do carrinho do cliente. Após criar o pedido, o carrinho é esvaziado. O pedido guarda uma cópia do nome e do preço unitário dos produtos no momento da criação.
+A criação do pedido não recebe corpo JSON. O endereço de entrega é copiado do cadastro do cliente e o carrinho é esvaziado após a criação.
 
-Exemplo de criação:
-
-```http
-POST /api/pedido/1
-```
-
-A criação retorna `201 Created` quando concluída com sucesso.
-
-Para o painel de entregador, use `GET /api/pedido/entregador/2`, substituindo `2` pelo ID real do entregador. Todos os entregadores cadastrados podem visualizar a mesma lista, ordenada do pedido mais recente ao mais antigo.
-
-### Status de entrega
-
-O fluxo permitido é:
+O fluxo de status é:
 
 ```text
 Recebido -> EmPreparacao -> SaiuParaEntrega -> Entregue
 ```
 
-Exemplo de atualização (`PUT /api/pedido/1/status`):
+Exemplo de atualização:
 
 ```json
 {
@@ -179,49 +131,16 @@ Exemplo de atualização (`PUT /api/pedido/1/status`):
 }
 ```
 
-Use o ID real de um usuário cadastrado como `Entregador`. É necessário avançar na sequência permitida; pular etapas resulta em erro. Qualquer entregador cadastrado pode atualizar qualquer pedido.
+## Integração com o front-end
 
-## 🧪 Testando com Postman
+Repositório: https://github.com/Heitor-Souza-Pacheco/ProjetoIntegrador-Front
 
-Sugestão de ordem para testar o fluxo completo:
+- Em desenvolvimento local, o front chama `http://localhost:5295/api`.
+- Em implantação com Nginx, o front chama `/api` no mesmo domínio.
+- O front consome o catálogo, cadastro, login, perfil, carrinho, criação de pedido e atualização de status pelo painel de entregador.
 
-1. Cadastre um usuário do tipo `Cliente` e outro do tipo `Entregador`.
-2. Faça login com cada usuário, enviando o respectivo `tipoConta`.
-3. Tente fazer login com o tipo de conta errado e confira o retorno `401`.
-4. Consulte o catálogo com `GET /api/produto`.
-5. Adicione um ou mais produtos ao carrinho do cliente.
-6. Consulte o carrinho e confira quantidades, subtotais e total.
-7. Crie o pedido e guarde o ID retornado.
-8. Consulte os pedidos do cliente com `GET /api/pedido/cliente/{clienteId}`.
-9. Consulte todos os pedidos com `GET /api/pedido/entregador/{entregadorId}`.
-10. Atualize o status em sequência até `Entregue`.
+## Observações de segurança
 
-Entre as respostas de erro previstas estão usuário, produto ou pedido não encontrado; e-mail duplicado; carrinho vazio; produto indisponível; tipo de conta incompatível com o login; e transição de status inválida. Dados de validação incorretos podem retornar `400 Bad Request`.
+Este é um projeto acadêmico. O login ainda não utiliza JWT ou sessão validada no servidor, e algumas rotas identificam o usuário pelo ID enviado pelo navegador. Portanto, não utilize esta API em produção sem implementar autenticação e autorização adequadas.
 
-## 🗂️ Organização do projeto
-
-A estrutura principal está organizada por responsabilidade:
-
-- `Model/`: modelos e validações dos dados, como usuário, produto, carrinho e pedido.
-- `Controller/`: endpoints HTTP e regras de fluxo da API.
-- `Data/`: catálogo de produtos e armazenamento temporário em memória.
-- `Program.cs`: configuração e inicialização da aplicação.
-
-## ⚠️ Limitações atuais
-
-- **Sem MySQL por enquanto:** usuários, carrinhos e pedidos ficam em memória e são perdidos quando a aplicação é reiniciada.
-- **Identificação simplificada para fins didáticos:** o login confere e-mail, senha e tipo de conta e retorna o usuário identificado, mas não implementa token de autenticação.
-- **Sem autorização de produção:** os IDs enviados nas rotas identificam registros e a API confere o tipo cadastrado em operações específicas. Isso não substitui autenticação e autorização reais; os valores enviados pelo cliente podem ser alterados.
-- As senhas continuam armazenadas em texto puro conforme o escopo didático atual. Isso não é apropriado para produção.
-
-Esses pontos fazem parte do escopo atual do projeto e devem ser revistos antes de qualquer uso em produção.
-
-## 📌 Próximas evoluções
-
-- Integrar MySQL e persistência dos dados
-- Ampliar os testes automatizados
-- Melhorar documentação e tratamento de erros conforme o projeto evoluir
-
----
-
-Desenvolvido como projeto de estudo para praticar construção de APIs REST com C# e ASP.NET Core.
+Não versione senhas, tokens ou strings de conexão. Configure credenciais por variáveis de ambiente ou User Secrets.
