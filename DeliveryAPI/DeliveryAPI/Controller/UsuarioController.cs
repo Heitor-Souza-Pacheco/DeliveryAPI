@@ -56,26 +56,11 @@ public class UsuarioController : ControllerBase
                 usuario.Id,
                 usuario.Nome,
                 usuario.Email,
-                usuario.TipoConta,
-                usuario.Telefone,
-                usuario.Endereco
+                usuario.TipoConta
             })
             .ToListAsync();
 
         return Ok(usuarios);
-    }
-
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> BuscarPorId(int id)
-    {
-        var usuario = await _context.Usuarios
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == id);
-
-        if (usuario == null)
-            return NotFound("Usuário não encontrado.");
-
-        return Ok(DadosPublicos(usuario));
     }
 
     [HttpPut("{id:int}")]
