@@ -6,7 +6,7 @@ Este documento explica os recursos de C# e ASP.NET Core usados no projeto. A ide
 
 - **Model/**: classes que representam os dados da aplicação, como usuário, produto, carrinho e pedido.
 - **Controller/**: recebe requisições HTTP, executa as regras e devolve respostas.
-- **Data/**: guarda os dados temporários em memória até a integração com MySQL.
+- **Data/**: contém o `AppDbContext`, que configura as tabelas e o acesso ao MySQL com Entity Framework Core.
 - **Program.cs**: configura e inicia o servidor.
 - **DeliveryAPI.csproj**: informa ao .NET qual versão e quais dependências o projeto usa.
 
@@ -141,7 +141,7 @@ Em `Program.cs`:
 
 - As validações automáticas dependem das anotações e da configuração do ASP.NET Core, incluindo `[ApiController]`.
 - `Trim()` remove espaços nas extremidades, mas a validação de tamanho ocorre antes da execução do método do controller. Por isso, nomes compostos apenas por espaços precisam de um tratamento adicional após o `Trim()`.
-- O cadastro e o login atuais são didáticos: a senha está armazenada e comparada em texto puro. Isso não é apropriado para produção.
-- `AppDbContext.cs` está vazio e ainda não é usado; a persistência com MySQL será feita depois.
-- `static` com listas e dicionários mantém os dados apenas na memória do processo. Reiniciar a API apaga esses dados.
+- As senhas novas são protegidas pelo `PasswordHasher<Usuario>`. Contas antigas que ainda tenham senha em texto puro são atualizadas para o formato protegido quando fazem login com sucesso. O projeto ainda não implementa JWT ou autorização robusta.
+- `AppDbContext.cs` é utilizado pelos controllers para persistir usuários, produtos, carrinhos e pedidos no MySQL. O `Program.cs` garante a criação inicial do banco e complementa colunas novas em bancos já existentes.
+- As classes de armazenamento temporário que ainda aparecem em `Data/` são remanescentes de uma etapa anterior. O fluxo atual dos controllers utiliza `AppDbContext` e MySQL, então os dados persistidos não são apagados ao reiniciar a API.
 
