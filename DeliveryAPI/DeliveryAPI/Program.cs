@@ -8,8 +8,11 @@ builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("A connection string 'DefaultConnection' não foi configurada.");
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException(
+            "Configure a variável de ambiente ConnectionStrings__DefaultConnection antes de iniciar a API.");
 
     options.UseMySql(
         connectionString,
