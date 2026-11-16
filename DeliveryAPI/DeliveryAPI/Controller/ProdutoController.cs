@@ -15,7 +15,10 @@ public class ProdutoController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Listar()
     {
-        return Ok(await _context.Produtos.AsNoTracking().ToListAsync());
+        return Ok(await _context.Produtos
+            .Where(p => p.Disponivel)
+            .AsNoTracking()
+            .ToListAsync());
     }
 
     [HttpGet("{id:int}")]
