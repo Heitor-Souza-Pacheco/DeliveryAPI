@@ -79,6 +79,9 @@ public class UsuarioController : ControllerBase
         if (string.IsNullOrWhiteSpace(requisicao.Nome))
             return BadRequest("O nome não pode conter apenas espaços.");
 
+        if (string.IsNullOrWhiteSpace(requisicao.Telefone))
+            return BadRequest("O telefone é obrigatório.");
+
         if (usuario.TipoConta == "Cliente" && string.IsNullOrWhiteSpace(requisicao.Endereco))
             return BadRequest("O endereço é obrigatório para clientes.");
 
