@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Email).HasMaxLength(191).IsRequired();
             entity.Property(u => u.Senha).HasMaxLength(100).IsRequired();
             entity.Property(u => u.TipoConta).HasMaxLength(20).IsRequired();
+            entity.Property(u => u.Telefone).HasMaxLength(20);
+            entity.Property(u => u.Endereco).HasMaxLength(160);
         });
 
         modelBuilder.Entity<Produto>(entity =>
@@ -34,11 +36,10 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Descricao).HasMaxLength(500);
             entity.Property(p => p.Preco).HasPrecision(10, 2);
             entity.HasData(
-                new Produto { Id = 1, Nome = "Rosquinha Tradicional", Descricao = "Rosquinha clássica com açúcar.", Preco = 3.50m, Disponivel = true },
-                new Produto { Id = 2, Nome = "Rosquinha de Chocolate", Descricao = "Rosquinha coberta com chocolate.", Preco = 5.00m, Disponivel = true },
-                new Produto { Id = 3, Nome = "Rosquinha de Doce de Leite", Descricao = "Rosquinha com cobertura de doce de leite.", Preco = 5.50m, Disponivel = true },
-                new Produto { Id = 4, Nome = "Rosquinha de Coco", Descricao = "Rosquinha com cobertura de coco.", Preco = 4.50m, Disponivel = true },
-                new Produto { Id = 5, Nome = "Rosquinha de Morango", Descricao = "Rosquinha com cobertura sabor morango.", Preco = 5.00m, Disponivel = true }
+                new Produto { Id = 1, Nome = "Original", Descricao = "Donut tradicional.", Preco = 12.00m, Disponivel = true },
+                new Produto { Id = 2, Nome = "Chocolate", Descricao = "Donut com cobertura de chocolate.", Preco = 12.00m, Disponivel = true },
+                new Produto { Id = 3, Nome = "Amendoim C/ Nutella", Descricao = "Donut com amendoim e Nutella.", Preco = 12.00m, Disponivel = true },
+                new Produto { Id = 4, Nome = "Morango c/Confeitos", Descricao = "Donut com cobertura de morango e confeitos.", Preco = 12.00m, Disponivel = true }
             );
         });
 
@@ -55,6 +56,7 @@ public class AppDbContext : DbContext
             entity.ToTable("pedidos");
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Status).HasMaxLength(30).IsRequired();
+            entity.Property(p => p.EnderecoEntrega).HasMaxLength(160);
             entity.HasOne<Usuario>().WithMany().HasForeignKey(p => p.ClienteId).OnDelete(DeleteBehavior.Restrict);
             entity.Ignore(p => p.Total);
         });
